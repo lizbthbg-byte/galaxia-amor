@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Galaxia del Amor</title>
+
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden}
+canvas{display:block}
+</style>
+</head>
+
+<body>
+<canvas id="c"></canvas>
+
+<audio id="audio" loop autoplay>
+  <source src="https://www.dropbox.com/scl/fi/qfv28rqu6b36jwusao4x4/Love.MP3?raw=1" type="audio/mpeg">
+</audio>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.148.0/build/three.min.js"></script>
+
+<script>
+/* ================= ESCENA ================= */
+const canvas = document.getElementById("c");
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setClearColor(0x000000,1);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 5000);
+camera.position.z = 300;
+
+/* ================= LUZ ================= */
+scene.add(new THREE.AmbientLight(0xffaa66,0.8));
+const light = new THREE.PointLight(0xff6600,1.5);
+scene.add(light);
+
+/* ================= HUMO / NEBULOSA ================= */
+function nebula(count=800){
+  const g = new THREE.BufferGeometry();
+  const p = new Float32Array(count*3);
+  for(let i=0;i<count;i++){
+    const r=600*Math.random();
+    const t=Math.random()*Math.PI*2;
+    const y=(Math.random()-0.5)*300;
+    p[i*3]=Math.cos(t)*r;
+    p[i*3+1]=y;
+    p[i*3+2]=Math.sin(t)*r;
+  }
+  g.setAttribute("position",new THREE.BufferAttribute(p,3));
+  const m=new THREE.PointsMaterial({
+    color:0xff8844,
+    size:6,
+    transparent:true,
+    opacity:0.18,
+    blending:THREE.AdditiveBlending,
+    depthWrite:false
+  });
+  return new THREE.Points(g,m);
+}
+const smoke = nebula(1200);
+scene.add(smoke);
+
+/* ================= NÚCLEO ================= */
+const core = new THREE.Mesh(
+  new THREE.SphereGeometry(40,64,64),
+  new THREE.MeshPhongMaterial({
+    color:0xff3300,
+    emissive:0xff6600,
+    transparent:true,
+    opacity:0.7
+  })
+);
+scene.add(core);
+
+/* ================= ANILLOS SATURNO ================= */
+function ring(inner,outer,opacity){
+  const geo = new THREE.RingGeometry(inner,outer,256);
+  const mat = new THREE.MeshBasicMaterial({
+    color:0xffaa66,
+    transparent:true,
+    opacity,
+    side:THREE.DoubleSide,
+    blending:THREE.AdditiveBlending,
+    depthWrite:false
+  });
+  const mesh = new THREE.Mesh(geo,mat);
+  mesh.rotation.x = Math.PI/2;
+  return mesh;
+}
+
+const ring1 = ring(70,95,0.6);
+const ring2 = ring(100,130,0.35);
+scene.add(ring1,ring2);
+
+/* ================= FRASES ================= */
+const WORDS = [];
+const base = [
+"💖 Mi solecito","🌞 Mi sol","🌎 Mi gatito","✨ Brillas",
+"❤️ Te quiero","🌌 Universo","🌠 Estrellita","💫 Mi cielo",
+"🔥 Siempre tú","🎶 Tu risa","🦋 Libertad","💎 Eres todo",
+"🙏 Gracias","🤗 Abrazos","🌈 Alegría","🌟 Contigo",
+"🧸 Ternura","🎁 Mi razón","🌙 Mi destino","🕊️ Mi paz",
+"🪐 Mi universo","🌊 Mi calma","💡 Mi luz","🥰 Mi vida",
+"🎇 Felicidad","🌺 Mi flor","💜 Eternidad","✨ Magia",
+"⭐ Mi estrella","🌴 Mi paraíso"
+];
+for(let i=0;i<6;i++) WORDS.push(...base);
+
+const textGroup = new THREE.Group();
+scene.add(textGroup);
+
+function textSprite(text){
+  const c=document.createElement("canvas");
+  c.width=512;c.height=128;
+  const x=c.getContext("2d");
+  x.font="bold 60px Arial";
+  x.textAlign="center";
+  x.textBaseline="middle";
+  x.fillStyle="#fff";
+  x.shadowColor="#ff8844";
+  x.shadowBlur=25;
+  x.fillText(text,256,64);
+  const t=new THREE.CanvasTexture(c);
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:t,transparent:true,blending:THREE.AdditiveBlending
+  }));
+  s.scale.set(55,14,1);
+  return s;
+}
+
+WORDS.forEach(w=>{
+  const s=textSprite(w);
+  const r=180+Math.random()*180;
+  const a=Math.random()*Math.PI*2;
+  const y=(Math.random()-0.5)*200;
+  s.position.set(Math.cos(a)*r,y,Math.sin(a)*r);
+  s.userData={a,r,speed:0.002+Math.random()*0.002};
+  textGroup.add(s);
+});
+
+/* ================= ANIMACIÓN ================= */
+let t=0;
+function animate(){
+  requestAnimationFrame(animate);
+  t+=0.01;
+
+  smoke.rotation.y+=0.0006;
+  ring1.rotation.z+=0.002;
+  ring2.rotation.z-=0.0016;
+
+  textGroup.children.forEach(s=>{
+    s.userData.a+=s.userData.speed;
+    s.position.x=Math.cos(s.userData.a)*s.userData.r;
+    s.position.z=Math.sin(s.userData.a)*s.userData.r;
+  });
+
+  camera.position.x = Math.sin(t*0.15)*320;
+  camera.position.z = Math.cos(t*0.15)*320;
+  camera.lookAt(0,0,0);
+
+  renderer.render(scene,camera);
+}
+animate();
+</script>
+</body>
+</html>
