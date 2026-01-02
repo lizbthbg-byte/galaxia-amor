@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Galaxia del Amor</title>
+
+<style>
+html,body{margin:0;height:100%;background:black;overflow:hidden}
+canvas{display:block}
+
+.player{
+position:fixed;
+bottom:20px;
+left:50%;
+transform:translateX(-50%);
+display:flex;
+gap:10px;
+align-items:center;
+padding:10px 20px;
+border:2px solid #ff8800;
+border-radius:999px;
+color:white;
+font-family:Arial;
+background:rgba(0,0,0,.4);
+z-index:10;
+}
+
+.player button{
+background:none;
+border:none;
+color:white;
+font-size:22px;
+cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+<canvas id="c"></canvas>
+
+<div class="player">
+<button id="play">▶️</button>
+<span>Amor 💖</span>
+</div>
+
+<audio id="audio" loop>
+<source src="https://www.dropbox.com/scl/fi/qfv28rqu6b36jwusao4x4/Love.MP3?raw=1" type="audio/mpeg">
+</audio>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.148.0/build/three.min.js"></script>
+
+<script>
+/* ========= AUDIO ========= */
+const audio=document.getElementById("audio");
+const play=document.getElementById("play");
+let playing=false;
+play.onclick=()=>{
+  if(!playing){audio.play();play.textContent="⏸️";}
+  else{audio.pause();play.textContent="▶️";}
+  playing=!playing;
+};
+
+/* ========= ESCENA ========= */
+const renderer=new THREE.WebGLRenderer({canvas:document.getElementById("c"),antialias:true});
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.1,5000);
+camera.position.z=320;
+
+/* ========= LUZ ========= */
+scene.add(new THREE.AmbientLight(0xffaa66,0.9));
+const light=new THREE.PointLight(0xff6600,1.5);
+scene.add(light);
+
+/* ========= HUMO ========= */
+const smokeGeo=new THREE.BufferGeometry();
+const smokeCount=1200;
+const pos=
